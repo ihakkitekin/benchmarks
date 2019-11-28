@@ -1,0 +1,16 @@
+{
+  "name": "http-proxy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "bench": "node bench.js --url=https://local.trendyol.com --round=1 --nginx"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "autocannon": "^4.4.0",
+    "yargs": "^15.0.2"
+  }
+}
