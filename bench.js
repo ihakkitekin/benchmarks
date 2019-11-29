@@ -169,7 +169,7 @@ async function runAll() {
   process.stdout.write(`Saving results to ${fileName} ...`);
   fs.writeFileSync(
     fileName,
-    JSON.stringify({ ...conditions, apps: benchResults }, null, 4),
+    JSON.stringify({ ...conditions, finalResults, apps: benchResults }, null, 4),
   );
   process.stdout.write(textWithColor('done\n', colors.Green));
 }
