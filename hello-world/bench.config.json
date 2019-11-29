@@ -12,9 +12,5 @@
       "name": "nodejs",
       "url": "http://localhost:3003"
     }
-  ],
-  "rounds": 1,
-  "duration": 15,
-  "connections": 100,
-  "roundByRoundResults": false
+  ]
 }

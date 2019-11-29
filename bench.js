@@ -4,8 +4,11 @@ const path = require('path');
 const fs = require('fs');
 
 const targetBench = process.argv[2];
-const configPath = `./${targetBench}/bench.config.json`;
-const config = require(configPath);
+const benchConfigPath = `./${targetBench}/bench.config.json`;
+const mainConfig = require('./bench.config.json');
+const benchConfig = require(benchConfigPath);
+
+const config = { ...mainConfig, ...benchConfig };
 const execOptions = {
   cwd: path.join(__dirname, targetBench),
 };
@@ -92,9 +95,11 @@ async function run(app) {
 
     execSync(`docker-compose start ${container}`, execOptions);
 
-    process.stdout.write('Warming up ... ');
-    await warmUp(app);
-    process.stdout.write(textWithColor('done\n', colors.Green));
+    if (config.warmUp) {
+      process.stdout.write('Warming up ... ');
+      await warmUp(app);
+      process.stdout.write(textWithColor('done\n', colors.Green));
+    }
 
     process.stdout.write('Running ... ');
     await bench(app, round);
