@@ -13,7 +13,6 @@
       "url": "http://localhost:3003"
     }
   ],
-  "paths": [],
   "rounds": 1,
   "duration": 15,
   "connections": 100,

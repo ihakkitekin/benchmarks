@@ -24,9 +24,8 @@ const colors = {
 
 const benchResults = [];
 
-async function bench(app, requests, round) {
+async function bench(app, round) {
   const results = await autocannon({
-    requests,
     url: app.url,
     connections: config.connections,
     duration: config.duration,
@@ -61,9 +60,8 @@ async function bench(app, requests, round) {
   }
 }
 
-async function warmUp(app, requests) {
+async function warmUp(app) {
   await autocannon({
-    requests,
     url: app.url,
     connections: 10,
     duration: 10,
@@ -74,7 +72,7 @@ function textWithColor(text, color) {
   return `${color}${text}${colors.Reset}`;
 }
 
-async function run(app, requests) {
+async function run(app) {
   const container = app.name;
 
   for (let i = 0; i < config.rounds; i++) {
@@ -91,11 +89,11 @@ async function run(app, requests) {
     execSync(`docker-compose start ${container}`, execOptions);
 
     process.stdout.write('Warming up ... ');
-    await warmUp(app, requests);
+    await warmUp(app);
     process.stdout.write(textWithColor('done\n', colors.Green));
 
     process.stdout.write('Running ... ');
-    await bench(app, requests, round);
+    await bench(app, round);
     process.stdout.write(textWithColor('done\n', colors.Green));
 
     execSync(`docker-compose stop ${container}`, execOptions);
@@ -109,16 +107,9 @@ async function init() {
   console.log('\nStopping containers if already running...\n');
   execSync(`docker-compose stop`, execOptions);
 
-  const hasPaths = Array.isArray(config.paths) && config.paths.length > 0;
-  const requests = hasPaths
-    ? config.map(path => {
-        return { path };
-      })
-    : undefined;
-
   for (let i = 0; i < config.apps.length; i++) {
     const app = config.apps[i];
-    await run(app, requests);
+    await run(app);
   }
 
   const conditions = {
