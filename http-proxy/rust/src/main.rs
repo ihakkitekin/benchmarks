@@ -23,7 +23,7 @@ async fn proxy(
 
     *req.uri_mut() = uri;
     let mut res = client.request(req).await?;
-    res.headers_mut().insert("x-powered-by", HeaderValue::from_static("Hyper"));
+    res.headers_mut().insert("Server", HeaderValue::from_static("Hyper"));
 
     Ok(res)
 }

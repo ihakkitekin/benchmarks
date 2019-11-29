@@ -12,7 +12,7 @@ const defaultWebHandler = (err, req, res) => {
 const server = http.createServer();
 
 server.on('request', (req, res) => {
-  res.setHeader('x-powered-by', 'nodejs');
+  res.setHeader('Server', 'NodeJS');
 
   proxy.web(
     req,
