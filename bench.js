@@ -3,7 +3,7 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const readline = require('readline');
-
+const { text, print } = require('./tools/textTools');
 
 const targetBench = process.argv[2];
 const benchConfigPath = `./${targetBench}/bench.config.json`;
@@ -13,18 +13,6 @@ const benchConfig = require(benchConfigPath);
 const config = { ...mainConfig, ...benchConfig };
 const execOptions = {
   cwd: path.join(__dirname, targetBench),
-};
-
-const colors = {
-  Black: '\x1b[30m',
-  Red: '\x1b[31m',
-  Green: '\x1b[32m',
-  Yellow: '\x1b[33m',
-  Blue: '\x1b[34m',
-  Magenta: '\x1b[35m',
-  Cyan: '\x1b[36m',
-  White: '\x1b[37m',
-  Reset: '\x1b[0m',
 };
 
 const benchResults = [];
@@ -46,11 +34,7 @@ async function bench(app, round) {
   };
 
   if (config.roundByRoundResults) {
-    console.log(
-      `\nRound ${round} results:\n`,
-      JSON.stringify(res, null, 2),
-      '\n',
-    );
+    print(`\nRound ${round} results:\n`, JSON.stringify(res, null, 2), '\n');
   }
 
   const benchApp = benchResults.find(res => res.name === app.name);
@@ -73,39 +57,30 @@ async function warmUp(app) {
   });
 }
 
-function textWithColor(text, color) {
-  return `${color}${text}${colors.Reset}`;
-}
-
 async function run(app) {
   const container = app.name;
 
   console.log(
-    textWithColor('\nStarting benchmark test for:', colors.Yellow),
-    textWithColor(app.name, colors.Magenta),
-    '\n',
+    text.yellow('\nStarting benchmark test for:'),
+    text.magenta(`${app.name}\n`),
   );
 
   for (let i = 0; i < config.rounds; i++) {
     const round = i + 1;
 
-    console.log(
-      textWithColor('Round:', colors.Yellow),
-      textWithColor(round, colors.Green),
-      '\n',
-    );
+    console.log(text.yellow('Round:'), text.green(round));
 
     execSync(`docker-compose start ${container}`, execOptions);
 
     if (config.warmUp) {
-      process.stdout.write('Warming up ... ');
+      print('Warming up ... ');
       await warmUp(app);
-      process.stdout.write(textWithColor('done\n', colors.Green));
+      console.log(text.green('done'));
     }
 
-    process.stdout.write('Running ... ');
+    print('Running ... ');
     await bench(app, round);
-    process.stdout.write(textWithColor('done\n', colors.Green));
+    console.log(text.green('done'));
 
     execSync(`docker-compose stop ${container}`, execOptions);
 
@@ -114,12 +89,11 @@ async function run(app) {
 }
 
 async function runAll() {
-  console.log('\nStopping containers if already running ...\n');
+  console.log('Stopping containers if already running ...\n');
   execSync(`docker-compose down`, execOptions);
 
   console.log('\nBuilding containers ...\n');
   execSync('docker-compose build && docker-compose up --no-start', execOptions);
-
 
   for (let i = 0; i < config.apps.length; i++) {
     const app = config.apps[i];
@@ -130,7 +104,7 @@ async function runAll() {
     }
   }
 
-  console.log('\nStopping all containers ...\n');
+  console.log('\nStopping all containers ...');
   execSync(`docker-compose down`, execOptions);
 
   const conditions = {
@@ -174,34 +148,27 @@ async function runAll() {
 
   const fileName = targetBench + '.result.json';
 
-  process.stdout.write(`Saving results to ${fileName} ...`);
+  print(`Saving results to ${fileName} ...`);
   fs.writeFileSync(
     fileName,
     JSON.stringify(
-      { ...conditions, finalResults, apps: benchResults },
+      {
+        ...conditions,
+        finalResults,
+        roundByRound: {
+          apps: benchResults,
+        },
+      },
       null,
       2,
     ),
   );
-  process.stdout.write(textWithColor('done\n', colors.Green));
+
+  console.log(text.green('done'));
 }
 
-const retryCount = 3;
-let failCount = 0;
-
 async function init() {
-  try {
-    await runAll();
-  } catch (error) {
-    console.error(error);
-
-    failCount++;
-
-    if (failCount < retryCount) {
-      console.error('\nRetrying running tests ...');
-      init();
-    }
-  }
+  await runAll();
 }
 
 function cooldown(ms) {
@@ -210,13 +177,13 @@ function cooldown(ms) {
     const interval = setInterval(() => {
       count--;
       readline.cursorTo(process.stdout, 0);
-      process.stdout.write(`Cooling down for ${count} seconds ...`);
+      print(`Cooling down for ${count} seconds ...`);
     }, 1000);
 
     setTimeout(() => {
       clearInterval(interval);
       readline.cursorTo(process.stdout, 0);
-      process.stdout.write(`Cooling down for ${count} seconds ... ${textWithColor('done\n\n', colors.Green)}`);
+      print(`Cooling down for ${count} seconds ... ${text.green('done\n')}`);
       resolve();
     }, ms);
   });
