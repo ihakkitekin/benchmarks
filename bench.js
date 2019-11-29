@@ -2,6 +2,8 @@ const autocannon = require('autocannon');
 const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const readline = require('readline');
+
 
 const targetBench = process.argv[2];
 const benchConfigPath = `./${targetBench}/bench.config.json`;
@@ -46,7 +48,7 @@ async function bench(app, round) {
   if (config.roundByRoundResults) {
     console.log(
       `\nRound ${round} results:\n`,
-      JSON.stringify(res, null, 4),
+      JSON.stringify(res, null, 2),
       '\n',
     );
   }
@@ -106,16 +108,18 @@ async function run(app) {
     process.stdout.write(textWithColor('done\n', colors.Green));
 
     execSync(`docker-compose stop ${container}`, execOptions);
-    process.stdout.write('\n\n');
+
+    await cooldown(10000);
   }
 }
 
 async function runAll() {
-  console.log('Building containers ...\n');
+  console.log('\nStopping containers if already running ...\n');
+  execSync(`docker-compose down`, execOptions);
+
+  console.log('\nBuilding containers ...\n');
   execSync('docker-compose build && docker-compose up --no-start', execOptions);
 
-  console.log('\nStopping containers if already running ...\n');
-  execSync(`docker-compose stop`, execOptions);
 
   for (let i = 0; i < config.apps.length; i++) {
     const app = config.apps[i];
@@ -126,7 +130,11 @@ async function runAll() {
     }
   }
 
+  console.log('\nStopping all containers ...\n');
+  execSync(`docker-compose down`, execOptions);
+
   const conditions = {
+    benchMark: targetBench,
     durationEach: config.duration,
     rounds: config.rounds,
     connections: config.connections,
@@ -169,7 +177,11 @@ async function runAll() {
   process.stdout.write(`Saving results to ${fileName} ...`);
   fs.writeFileSync(
     fileName,
-    JSON.stringify({ ...conditions, finalResults, apps: benchResults }, null, 4),
+    JSON.stringify(
+      { ...conditions, finalResults, apps: benchResults },
+      null,
+      2,
+    ),
   );
   process.stdout.write(textWithColor('done\n', colors.Green));
 }
@@ -190,6 +202,24 @@ async function init() {
       init();
     }
   }
+}
+
+function cooldown(ms) {
+  let count = (ms / 1000).toFixed(0);
+  return new Promise(resolve => {
+    const interval = setInterval(() => {
+      count--;
+      readline.cursorTo(process.stdout, 0);
+      process.stdout.write(`Cooling down for ${count} seconds ...`);
+    }, 1000);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      readline.cursorTo(process.stdout, 0);
+      process.stdout.write(`Cooling down for ${count} seconds ... ${textWithColor('done\n\n', colors.Green)}`);
+      resolve();
+    }, ms);
+  });
 }
 
 init();
