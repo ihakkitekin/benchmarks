@@ -75,12 +75,16 @@ function textWithColor(text, color) {
 async function run(app) {
   const container = app.name;
 
+  console.log(
+    textWithColor('\nStarting benchmark test for:', colors.Yellow),
+    textWithColor(app.name, colors.Magenta),
+    '\n',
+  );
+
   for (let i = 0; i < config.rounds; i++) {
     const round = i + 1;
 
     console.log(
-      textWithColor('\nStarting benchmark test for:', colors.Yellow),
-      textWithColor(app.name, colors.Magenta),
       textWithColor('Round:', colors.Yellow),
       textWithColor(round, colors.Green),
       '\n',
@@ -97,19 +101,24 @@ async function run(app) {
     process.stdout.write(textWithColor('done\n', colors.Green));
 
     execSync(`docker-compose stop ${container}`, execOptions);
+    process.stdout.write('\n\n');
   }
 }
 
-async function init() {
-  console.log('Building containers...\n');
+async function runAll() {
+  console.log('Building containers ...\n');
   execSync('docker-compose build && docker-compose up --no-start', execOptions);
 
-  console.log('\nStopping containers if already running...\n');
+  console.log('\nStopping containers if already running ...\n');
   execSync(`docker-compose stop`, execOptions);
 
   for (let i = 0; i < config.apps.length; i++) {
     const app = config.apps[i];
-    await run(app);
+    try {
+      await run(app);
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   const conditions = {
@@ -158,6 +167,24 @@ async function init() {
     JSON.stringify({ ...conditions, apps: benchResults }, null, 4),
   );
   process.stdout.write(textWithColor('done\n', colors.Green));
+}
+
+const retryCount = 3;
+let failCount = 0;
+
+async function init() {
+  try {
+    await runAll();
+  } catch (error) {
+    console.error(error);
+
+    failCount++;
+
+    if (failCount < retryCount) {
+      console.error('\nRetrying running tests ...');
+      init();
+    }
+  }
 }
 
 init();
