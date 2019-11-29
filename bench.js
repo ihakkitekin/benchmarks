@@ -21,7 +21,7 @@ const colors = {
   Reset: '\x1b[0m',
 };
 
-const benchResults = [];
+const benchResults = {};
 
 async function bench(app, requests, round) {
   const results = await autocannon({
@@ -44,7 +44,14 @@ async function bench(app, requests, round) {
     JSON.stringify(res, null, 4),
     '\n',
   );
-  benchResults.push(res);
+
+  const appResult = benchResults[app.name];
+
+  if (appResult) {
+    appResult.push(res);
+  } else {
+    benchResults[app.name] = [res];
+  }
 }
 
 async function warmUp(app, requests) {
@@ -88,10 +95,10 @@ async function run(app, requests) {
 }
 
 async function init() {
-  console.log('Building containers...');
+  console.log('Building containers...\n');
   execSync('docker-compose build && docker-compose up --no-start', execOptions);
 
-  console.log('Stopping containers if already running...');
+  console.log('Stopping containers if already running...\n');
   execSync(`docker-compose stop`, execOptions);
 
   const hasPaths = Array.isArray(config.paths) && config.paths.length > 0;
@@ -105,6 +112,45 @@ async function init() {
     const app = config.apps[i];
     await run(app, requests);
   }
+
+  const conditions = [
+    {
+      durationEach: config.duration,
+      rounds: config.rounds,
+      connections: config.connections,
+    },
+  ];
+
+  const finalResults = [];
+
+  for (let i = 0; i < config.apps.length; i++) {
+    const app = config.apps[i].name;
+    const appResults = benchResults[app];
+    const total = appResults.reduce((a, b) => {
+      return {
+        totalRequests: a.totalRequests + b.totalRequests,
+        rps: a.rps + b.rps,
+        averageLatency: a.averageLatency + b.averageLatency,
+        errors: a.errors + b.errors,
+        timeouts: a.timeouts + b.timeouts,
+      };
+    });
+
+    const results = {
+      app,
+      totalRequests: total.totalRequests,
+      totalErrors: total.errors,
+      totalTimeouts: total.timeouts,
+      averageLatency: (total.averageLatency / appResults.length).toFixed(2),
+      averageRequests: (total.totalRequests / appResults.length).toFixed(2),
+      averageRps: (total.rps / appResults.length).toFixed(2),
+    };
+
+    finalResults.push(results);
+  }
+
+  console.table(conditions);
+  console.table(finalResults);
 }
 
 init();
