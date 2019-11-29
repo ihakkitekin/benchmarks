@@ -1,7 +1,7 @@
 {
-  "rounds": 1,
+  "rounds": 5,
   "duration": 15,
-  "connections": 100,
+  "connections": 1000,
   "roundByRoundResults": false,
   "warmUp": true
 }

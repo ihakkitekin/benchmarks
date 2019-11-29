@@ -3,7 +3,7 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const readline = require('readline');
-const { text, print } = require('./tools/textTools');
+const { text, print, newStep } = require('./tools/textTools');
 
 const targetBench = process.argv[2];
 const benchConfigPath = `./${targetBench}/bench.config.json`;
@@ -60,10 +60,7 @@ async function warmUp(app) {
 async function run(app) {
   const container = app.name;
 
-  console.log(
-    text.yellow('\nStarting benchmark test for:'),
-    text.magenta(`${app.name}\n`),
-  );
+  newStep('Starting benchmark test for:', text.magenta(`${app.name}`));
 
   for (let i = 0; i < config.rounds; i++) {
     const round = i + 1;
@@ -89,10 +86,10 @@ async function run(app) {
 }
 
 async function runAll() {
-  console.log('Stopping containers if already running ...\n');
+  newStep('Stopping containers if already running ...');
   execSync(`docker-compose down`, execOptions);
 
-  console.log('\nBuilding containers ...\n');
+  newStep('Building containers ...');
   execSync('docker-compose build && docker-compose up --no-start', execOptions);
 
   for (let i = 0; i < config.apps.length; i++) {
@@ -104,7 +101,7 @@ async function runAll() {
     }
   }
 
-  console.log('\nStopping all containers ...');
+  newStep('Stopping all containers ...');
   execSync(`docker-compose down`, execOptions);
 
   const conditions = {
@@ -148,7 +145,7 @@ async function runAll() {
 
   const fileName = targetBench + '.result.json';
 
-  print(`Saving results to ${fileName} ...`);
+  newStep(`Saving results to ${fileName} ...`);
   fs.writeFileSync(
     fileName,
     JSON.stringify(
@@ -183,7 +180,7 @@ function cooldown(ms) {
     setTimeout(() => {
       clearInterval(interval);
       readline.cursorTo(process.stdout, 0);
-      print(`Cooling down for ${count} seconds ... ${text.green('done\n')}`);
+      print(`Cooling down for ${count} seconds ... ${text.green('done\n\n')}`);
       resolve();
     }, ms);
   });

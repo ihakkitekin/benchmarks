@@ -22,10 +22,11 @@ function print(...args) {
   process.stdout.write(args.join(' '));
 }
 
-function newLine(count = 1) {
-  return '\n'.repeat(count);
+function newStep(...args) {
+  const message = args.join(' ');
+  return print(`\n\n${text.cyan(message)}\n\n`);
 }
 
 module.exports.text = text;
 module.exports.print = print;
-module.exports.newLine = newLine;
+module.exports.newStep = newStep;
