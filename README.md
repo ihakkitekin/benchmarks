@@ -10,6 +10,6 @@ To install benchmark script depedencies run `npm i`. You also need to update var
 ## Running benchmark
 Run benchmarks with `npm run bench $benchmark_name`. Example:
 
-```npm run bench http-proxy```
+```npm run bench hello-world```
 
 Each benchmark will build all containers in the beginning and restart related container before each round.

@@ -1,0 +1,20 @@
+version: '3.1'
+services:
+  rust:
+    build:
+      context: rust
+      dockerfile: Dockerfile
+    ports:
+      - ${RUST_PORT}:8080
+  go:
+    build:
+      context: go
+      dockerfile: Dockerfile
+    ports:
+      - ${GO_PORT}:8080
+  nodejs:
+    build:
+      context: nodejs
+      dockerfile: Dockerfile
+    ports:
+      - ${NODEJS_PORT}:8080

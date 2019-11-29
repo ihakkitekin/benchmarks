@@ -3,6 +3,5 @@
 **/.vscode
 **/.env
 **/node_modules
-http-proxy/nginx/certs
-http-proxy/rust/target
-http-proxy/rust/**/*.rs.bk
+**/rust/target
+**/rust/**/*.rs.bk
