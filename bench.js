@@ -6,7 +6,7 @@ const targetBench = process.argv[2];
 const configPath = `./${targetBench}/bench.config.json`;
 const config = require(configPath);
 const execOptions = {
-  cwd: path.join(__dirname, targetBench),
+  cwd: path.join(__dirname, targetBench)
 };
 
 const colors = {
@@ -97,8 +97,8 @@ async function run(app, requests) {
 async function init() {
   console.log('Building containers...\n');
   execSync('docker-compose build && docker-compose up --no-start', execOptions);
-
-  console.log('Stopping containers if already running...\n');
+  
+  console.log('\nStopping containers if already running...\n');
   execSync(`docker-compose stop`, execOptions);
 
   const hasPaths = Array.isArray(config.paths) && config.paths.length > 0;

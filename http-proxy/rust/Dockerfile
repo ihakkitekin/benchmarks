@@ -4,7 +4,8 @@
 
 FROM ekidd/rust-musl-builder:1.39.0 as cargo-build
 
-COPY Cargo.toml Cargo.toml
+COPY --chown=rust:rust ./Cargo.toml ./
+COPY --chown=rust:rust ./Cargo.lock ./
 
 RUN sudo mkdir -p src
 RUN sudo chown -R rust:rust /home/rust
@@ -13,8 +14,8 @@ RUN echo "fn main() {println!(\"if you see this, the build broke\")}" > ./src/ma
 
 RUN RUSTFLAGS=-Clinker=musl-gcc cargo build --release --target=x86_64-unknown-linux-musl
 
-RUN rm -f target/x86_64-unknown-linux-musl/release/deps/http-proxy*
-RUN rm -rf src
+RUN rm -f target/x86_64-unknown-linux-musl/release/deps/http_proxy*
+RUN rm -rf src/main.rs
 
 COPY . .
 
