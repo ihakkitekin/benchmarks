@@ -1,12 +1,13 @@
 const autocannon = require('autocannon');
 const { execSync } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
 const targetBench = process.argv[2];
 const configPath = `./${targetBench}/bench.config.json`;
 const config = require(configPath);
 const execOptions = {
-  cwd: path.join(__dirname, targetBench)
+  cwd: path.join(__dirname, targetBench),
 };
 
 const colors = {
@@ -21,7 +22,7 @@ const colors = {
   Reset: '\x1b[0m',
 };
 
-const benchResults = {};
+const benchResults = [];
 
 async function bench(app, requests, round) {
   const results = await autocannon({
@@ -32,6 +33,7 @@ async function bench(app, requests, round) {
   });
 
   const res = {
+    round,
     totalRequests: results.requests.sent,
     rps: results.requests.average,
     averageLatency: results.latency.average,
@@ -39,18 +41,23 @@ async function bench(app, requests, round) {
     timeouts: results.timeouts,
   };
 
-  console.log(
-    `\nRound ${round} results:\n`,
-    JSON.stringify(res, null, 4),
-    '\n',
-  );
+  if (config.roundByRoundResults) {
+    console.log(
+      `\nRound ${round} results:\n`,
+      JSON.stringify(res, null, 4),
+      '\n',
+    );
+  }
 
-  const appResult = benchResults[app.name];
+  const benchApp = benchResults.find(res => res.name === app.name);
 
-  if (appResult) {
-    appResult.push(res);
+  if (benchApp) {
+    benchApp.results.push(res);
   } else {
-    benchResults[app.name] = [res];
+    benchResults.push({
+      name: app.name,
+      results: [res],
+    });
   }
 }
 
@@ -85,10 +92,11 @@ async function run(app, requests) {
 
     process.stdout.write('Warming up ... ');
     await warmUp(app, requests);
-
     process.stdout.write(textWithColor('done\n', colors.Green));
-    console.log('Starting benchmark ...');
+
+    process.stdout.write('Running ... ');
     await bench(app, requests, round);
+    process.stdout.write(textWithColor('done\n', colors.Green));
 
     execSync(`docker-compose stop ${container}`, execOptions);
   }
@@ -97,7 +105,7 @@ async function run(app, requests) {
 async function init() {
   console.log('Building containers...\n');
   execSync('docker-compose build && docker-compose up --no-start', execOptions);
-  
+
   console.log('\nStopping containers if already running...\n');
   execSync(`docker-compose stop`, execOptions);
 
@@ -113,20 +121,19 @@ async function init() {
     await run(app, requests);
   }
 
-  const conditions = [
-    {
-      durationEach: config.duration,
-      rounds: config.rounds,
-      connections: config.connections,
-    },
-  ];
+  const conditions = {
+    durationEach: config.duration,
+    rounds: config.rounds,
+    connections: config.connections,
+  };
 
   const finalResults = [];
 
   for (let i = 0; i < config.apps.length; i++) {
     const app = config.apps[i].name;
-    const appResults = benchResults[app];
-    const total = appResults.reduce((a, b) => {
+    const benchApp = benchResults.find(res => res.name === app);
+    const resultsLength = benchApp.results.length;
+    const total = benchApp.results.reduce((a, b) => {
       return {
         totalRequests: a.totalRequests + b.totalRequests,
         rps: a.rps + b.rps,
@@ -136,21 +143,30 @@ async function init() {
       };
     });
 
-    const results = {
+    const result = {
       app,
       totalRequests: total.totalRequests,
       totalErrors: total.errors,
       totalTimeouts: total.timeouts,
-      averageLatency: (total.averageLatency / appResults.length).toFixed(2),
-      averageRequests: (total.totalRequests / appResults.length).toFixed(2),
-      averageRps: (total.rps / appResults.length).toFixed(2),
+      averageLatency: (total.averageLatency / resultsLength).toFixed(2),
+      averageRequests: (total.totalRequests / resultsLength).toFixed(2),
+      averageRps: (total.rps / resultsLength).toFixed(2),
     };
 
-    finalResults.push(results);
+    finalResults.push(result);
   }
 
-  console.table(conditions);
+  console.table([conditions]);
   console.table(finalResults);
+
+  const fileName = targetBench + '.result.json';
+
+  process.stdout.write(`Saving results to ${fileName} ...`);
+  fs.writeFileSync(
+    fileName,
+    JSON.stringify({ ...conditions, apps: benchResults }, null, 4),
+  );
+  process.stdout.write(textWithColor('done\n', colors.Green));
 }
 
 init();

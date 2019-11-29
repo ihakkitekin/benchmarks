@@ -51,8 +51,6 @@ async fn main() {
     let server = Server::bind(&server_addr)
         .serve(make_service);
 
-    println!("Listening on http://{}", server_addr);
-
     if let Err(e) = server.await {
         eprintln!("server error: {}", e);
     }

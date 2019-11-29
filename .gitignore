@@ -5,3 +5,4 @@
 **/node_modules
 **/rust/target
 **/rust/**/*.rs.bk
+*.result.json
