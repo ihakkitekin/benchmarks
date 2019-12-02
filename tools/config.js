@@ -16,9 +16,14 @@ function getServiceTemplate(framework, env) {
       dockerfile: Dockerfile
     ports:
       - ${framework.port}:${framework.port}
-    environment: \n${' '.repeat(6)}${Object.keys(env)
-    .map(key => `${key}: ${env[key]}`)
-    .join(`\n${' '.repeat(6)}`)}`;
+    ${
+      !_.isEqual(env, {})
+        ? `environment: \n${' '.repeat(6)}${Object.keys(env)
+            .map(key => `${key}: ${env[key]}`)
+            .join(`\n${' '.repeat(6)}`)}`
+        : ''
+    }
+    `;
 }
 
 function getFrameworks(source) {
