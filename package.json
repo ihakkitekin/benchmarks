@@ -1,14 +1,24 @@
 {
   "name": "benchmarks",
   "version": "1.0.0",
-  "description": "",
+  "description": "Framework benchmarks",
+  "keywords": [
+    "benchmark",
+    "framework"
+  ],
+  "author": {
+    "name": "İsmail Hakkı Tekin",
+    "email": "ihakkitekin@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ihakkitekin/benchmarks"
+  },
+  "license": "MIT",
   "main": "index.js",
   "scripts": {
     "bench": "node ./tools/bench/bench.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "autocannon": "^4.4.0",
     "lodash": "^4.17.15",
