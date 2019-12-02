@@ -4,12 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "bench": "node bench.js"
+    "bench": "node ./tools/bench.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "autocannon": "^4.4.0"
+    "autocannon": "^4.4.0",
+    "lodash": "^4.17.15",
+    "mkdirp": "^0.5.1"
   }
 }

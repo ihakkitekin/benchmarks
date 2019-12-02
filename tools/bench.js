@@ -1,25 +1,35 @@
 const autocannon = require('autocannon');
 const { execSync } = require('child_process');
 const path = require('path');
+const mkdirp = require('mkdirp');
 const fs = require('fs');
 const readline = require('readline');
-const { text, print, newStep } = require('./tools/textTools');
+const { text, print, newStep } = require('./text');
+const {
+  getFrameworks: getLanguageMap,
+  generateComposeFile,
+} = require('./config');
 
-const targetBench = process.argv[2];
-const benchConfigPath = `./${targetBench}/bench.config.json`;
-const mainConfig = require('./bench.config.json');
-const benchConfig = require(benchConfigPath);
+const benchName = process.argv[2];
+const config = require('./bench.config.json');
+const source = path.join(__dirname, `../apps/${benchName}`);
 
-const config = { ...mainConfig, ...benchConfig };
 const execOptions = {
-  cwd: path.join(__dirname, targetBench),
+  cwd: source,
 };
 
 const benchResults = [];
 
-async function bench(app, round) {
+function setup() {
+  const frameworks = getLanguageMap(source);
+  generateComposeFile(frameworks, source);
+
+  return frameworks;
+}
+
+async function bench(framework, round) {
   const results = await autocannon({
-    url: app.url,
+    url: `http://localhost:${framework.port}`,
     connections: config.connections,
     duration: config.duration,
   });
@@ -37,30 +47,33 @@ async function bench(app, round) {
     print(`\nRound ${round} results:\n`, JSON.stringify(res, null, 2), '\n');
   }
 
-  const benchApp = benchResults.find(res => res.name === app.name);
+  const benchApp = benchResults.find(res => res.name === framework.name);
 
   if (benchApp) {
     benchApp.results.push(res);
   } else {
     benchResults.push({
-      name: app.name,
+      name: framework.name,
       results: [res],
     });
   }
 }
 
-async function warmUp(app) {
+async function warmUp(framework) {
   await autocannon({
-    url: app.url,
+    url: `http://localhost:${framework.port}`,
     connections: 10,
     duration: 10,
   });
 }
 
-async function run(app) {
-  const container = app.name;
+async function run(framework) {
+  const container = `${framework.language}-${framework.name}`;
 
-  newStep('Starting benchmark test for:', text.magenta(`${app.name}`));
+  newStep(
+    'Starting benchmark test for:',
+    text.magenta(`${framework.language}:${framework.name}`),
+  );
 
   for (let i = 0; i < config.rounds; i++) {
     const round = i + 1;
@@ -71,12 +84,12 @@ async function run(app) {
 
     if (config.warmUp) {
       print('Warming up ... ');
-      await warmUp(app);
+      await warmUp(framework);
       console.log(text.green('done'));
     }
 
     print('Running ... ');
-    await bench(app, round);
+    await bench(framework, round);
     console.log(text.green('done'));
 
     execSync(`docker-compose stop ${container}`, execOptions);
@@ -85,17 +98,18 @@ async function run(app) {
   }
 }
 
-async function runAll() {
+async function runAll(frameworks) {
   newStep('Stopping containers if already running ...');
   execSync(`docker-compose down`, execOptions);
 
   newStep('Building containers ...');
   execSync('docker-compose build && docker-compose up --no-start', execOptions);
 
-  for (let i = 0; i < config.apps.length; i++) {
-    const app = config.apps[i];
+  for (let j = 0; j < frameworks.length; j++) {
+    const framework = frameworks[j];
+
     try {
-      await run(app);
+      await run(framework);
     } catch (error) {
       console.error(error);
     }
@@ -105,7 +119,7 @@ async function runAll() {
   execSync(`docker-compose down`, execOptions);
 
   const conditions = {
-    benchMark: targetBench,
+    benchMark: benchName,
     durationEach: config.duration,
     rounds: config.rounds,
     connections: config.connections,
@@ -113,9 +127,9 @@ async function runAll() {
 
   const finalResults = [];
 
-  for (let i = 0; i < config.apps.length; i++) {
-    const app = config.apps[i].name;
-    const benchApp = benchResults.find(res => res.name === app);
+  for (let i = 0; i < frameworks.length; i++) {
+    const framework = frameworks[i];
+    const benchApp = benchResults.find(res => res.name === framework.name);
     const resultsLength = benchApp.results.length;
     const total = benchApp.results.reduce((a, b) => {
       return {
@@ -128,44 +142,61 @@ async function runAll() {
     });
 
     const result = {
-      app,
+      app: `${framework.language}:${framework.name}`,
       totalRequests: total.totalRequests,
+      averageRps: Number((total.rps / resultsLength).toFixed(2)),
+      averageRequests: Number((total.totalRequests / resultsLength).toFixed(2)),
+      averageLatency: Number((total.averageLatency / resultsLength).toFixed(2)),
       totalErrors: total.errors,
       totalTimeouts: total.timeouts,
-      averageLatency: (total.averageLatency / resultsLength).toFixed(2),
-      averageRequests: (total.totalRequests / resultsLength).toFixed(2),
-      averageRps: (total.rps / resultsLength).toFixed(2),
     };
 
     finalResults.push(result);
   }
 
   console.table([conditions]);
-  console.table(finalResults);
-
-  const fileName = targetBench + '.result.json';
-
-  newStep(`Saving results to ${fileName} ...`);
-  fs.writeFileSync(
-    fileName,
-    JSON.stringify(
-      {
-        ...conditions,
-        finalResults,
-        roundByRound: {
-          apps: benchResults,
-        },
-      },
-      null,
-      2,
-    ),
+  console.table(
+    finalResults.sort((first, second) => {
+      if (second.averageRps > first.averageRps) return 1;
+      if (first.averageRps > second.averageRps) return -1;
+      return 0;
+    }),
   );
 
-  console.log(text.green('done'));
+  const filePath = path.join(
+    __dirname,
+    '../results',
+    benchName,
+    `results_${Date.now()}.json`,
+  );
+
+  newStep(`Saving results to ${filePath} ...`);
+
+  mkdirp(path.dirname(filePath), function(err) {
+    if (err) return cb(err);
+
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify(
+        {
+          ...conditions,
+          finalResults,
+          roundByRound: {
+            apps: benchResults,
+          },
+        },
+        null,
+        2,
+      ),
+      {},
+    );
+  });
 }
 
 async function init() {
-  await runAll();
+  const frameworks = setup();
+
+  await runAll(frameworks);
 }
 
 function cooldown(ms) {
