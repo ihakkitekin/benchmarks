@@ -30,11 +30,16 @@ function mapRoundResult(results, round) {
   };
 }
 
-function createEmptyResults(frameworks) {
-  return frameworks.map(framework => {
+function createEmptyResults(frameworks, benchConfig) {
+  return benchConfig.paths.map(path => {
     return {
-      name: `${framework.language}:${framework.name}`,
-      results: [],
+      path,
+      frameworks: frameworks.map(framework => {
+        return {
+          name: `${framework.language}:${framework.name}`,
+          results: [],
+        };
+      }),
     };
   });
 }

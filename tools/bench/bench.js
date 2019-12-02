@@ -6,12 +6,9 @@ const {
   saveResultsToFile,
   mapRoundResult,
   createEmptyResults,
-  mapBenchResult
+  mapBenchResult,
 } = require('../results');
-const {
-  getFrameworks,
-  generateComposeFile,
-} = require('../config');
+const { getFrameworks, generateComposeFile } = require('../config');
 const path = require('path');
 
 const benchName = process.argv[2];
@@ -35,14 +32,14 @@ const conditions = {
 function setup() {
   const frameworks = getFrameworks(source);
   generateComposeFile(frameworks, source);
-  benchResults = createEmptyResults(frameworks);
+  benchResults = createEmptyResults(frameworks, benchConfig);
 
   return frameworks;
 }
 
-async function bench(framework, round) {
+async function bench(framework, round, path) {
   const results = await autocannon({
-    url: `http://localhost:${framework.port}${benchConfig.path}`,
+    url: `http://localhost:${framework.port}${path}`,
     connections: mainConfig.connections,
     duration: mainConfig.duration,
   });
@@ -55,25 +52,30 @@ async function bench(framework, round) {
 
   const resName = `${framework.language}:${framework.name}`;
 
-  const benchResult = benchResults.find(res => res.name === resName);
+  const currentBenchPath = benchResults.find(res => res.path === path);
+  const benchResult = currentBenchPath.frameworks.find(
+    res => res.name === resName,
+  );
 
   benchResult.results.push(res);
 }
 
-async function warmUp(framework) {
+async function warmUp(framework, path) {
   await autocannon({
-    url: `http://localhost:${framework.port}`,
+    url: `http://localhost:${framework.port}${path}`,
     connections: 10,
     duration: 10,
   });
 }
 
-async function run(framework) {
+async function run(framework, path) {
   const container = `${framework.language}-${framework.name}`;
 
   newStep(
     'Starting benchmark test for:',
     text.magenta(`${framework.language}:${framework.name}`),
+    'on:',
+    text.magenta(path),
   );
 
   for (let i = 0; i < mainConfig.rounds; i++) {
@@ -84,12 +86,12 @@ async function run(framework) {
 
     if (mainConfig.warmUp) {
       print('Warming up ... ');
-      await warmUp(framework);
+      await warmUp(framework, path);
       console.log(text.green('done'));
     }
 
     print('Running ... ');
-    await bench(framework, round);
+    await bench(framework, round, path);
     console.log(text.green('done'));
 
     execSync(`docker-compose stop ${container}`, execOptions);
@@ -109,7 +111,10 @@ async function runAll(frameworks) {
     const framework = frameworks[j];
 
     try {
-      await run(framework);
+      for (let i = 0; i < benchConfig.paths.length; i++) {
+        const path = benchConfig.paths[i];
+        await run(framework, path);
+      }
     } catch (error) {
       console.error(error);
     }
@@ -120,28 +125,31 @@ async function runAll(frameworks) {
 
   const finalResults = [];
 
-  Object.keys(benchResults).forEach(key => {
-    const benchResult = benchResults[key];
+  benchResults.forEach(result => {
+    const pathResult = {
+      path: result.path,
+      frameworks: result.frameworks.map(benchResult => {
+        return mapBenchResult(benchResult);
+      }),
+    };
 
-    const result = mapBenchResult(benchResult);
+    console.table([{ ...conditions, path: pathResult.path }]);
+    console.table(
+      pathResult.frameworks.sort((first, second) => {
+        if (second.averageRps > first.averageRps) return 1;
+        if (first.averageRps > second.averageRps) return -1;
+        return 0;
+      }),
+    );
 
-    finalResults.push(result);
+    finalResults.push(pathResult);
   });
-
-  console.table([conditions]);
-  console.table(
-    finalResults.sort((first, second) => {
-      if (second.averageRps > first.averageRps) return 1;
-      if (first.averageRps > second.averageRps) return -1;
-      return 0;
-    }),
-  );
 
   saveResultsToFile(benchName, {
     ...conditions,
     finalResults,
     roundByRound: {
-      apps: benchResults,
+      paths: benchResults,
     },
   });
 }

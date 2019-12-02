@@ -1,4 +1,4 @@
 {
-  "path": "/hello-world",
+  "paths": ["/hello-world"],
   "environment": {}
 }
