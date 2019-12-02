@@ -1,12 +1,7 @@
-const { lstatSync, readdirSync, writeFileSync } = require('fs');
+const { writeFileSync } = require('fs');
 const path = require('path');
 const _ = require('lodash');
-
-function getDirectoryNames(source) {
-  return readdirSync(source).filter(name =>
-    lstatSync(path.join(source, name)).isDirectory(),
-  );
-}
+const { getDirectoryNames } = require('./file');
 
 function getServiceTemplate(framework, env) {
   return `

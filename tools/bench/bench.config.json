@@ -3,5 +3,6 @@
   "duration": 15,
   "connections": 1000,
   "roundByRoundResults": false,
-  "warmUp": true
+  "warmUp": true,
+  "cooldown": true
 }

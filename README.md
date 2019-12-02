@@ -12,4 +12,6 @@ Run benchmarks with `npm run bench $benchmark_name`. Example:
 
 ```npm run bench hello-world```
 
+Or run all benchmarks with `npm run bench`
+
 Each benchmark will build all containers in the beginning and restart related container before each round.

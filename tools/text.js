@@ -27,6 +27,15 @@ function newStep(...args) {
   return print(`\n\n${text.cyan(message)}\n\n`);
 }
 
+function newBenchMark(benchName) {
+  return print(
+    text.green('--- Running'),
+    text.yellow(benchName),
+    text.green('benchmark ---'),
+  );
+}
+
 module.exports.text = text;
 module.exports.print = print;
 module.exports.newStep = newStep;
+module.exports.newBenchMark = newBenchMark;
