@@ -47,13 +47,15 @@ async function bench(framework, round) {
     print(`\nRound ${round} results:\n`, JSON.stringify(res, null, 2), '\n');
   }
 
-  const benchApp = benchResults.find(res => res.name === framework.name);
+  const resName = `${framework.language}:${framework.name}`;
 
-  if (benchApp) {
-    benchApp.results.push(res);
+  const benchResult = benchResults.find(res => res.name === resName);
+
+  if (benchResult) {
+    benchResult.results.push(res);
   } else {
     benchResults.push({
-      name: framework.name,
+      name: resName,
       results: [res],
     });
   }
@@ -127,11 +129,11 @@ async function runAll(frameworks) {
 
   const finalResults = [];
 
-  for (let i = 0; i < frameworks.length; i++) {
-    const framework = frameworks[i];
-    const benchApp = benchResults.find(res => res.name === framework.name);
-    const resultsLength = benchApp.results.length;
-    const total = benchApp.results.reduce((a, b) => {
+  Object.keys(benchResults).forEach(key => {
+    const benchResult = benchResults[key];
+
+    const resultsLength = benchResult.results.length;
+    const total = benchResult.results.reduce((a, b) => {
       return {
         totalRequests: a.totalRequests + b.totalRequests,
         rps: a.rps + b.rps,
@@ -152,7 +154,7 @@ async function runAll(frameworks) {
     };
 
     finalResults.push(result);
-  }
+  });
 
   console.table([conditions]);
   console.table(

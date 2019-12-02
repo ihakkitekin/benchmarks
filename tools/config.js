@@ -8,14 +8,17 @@ function getDirectoryNames(source) {
   );
 }
 
-function getServiceTemplate(framework) {
+function getServiceTemplate(framework, env) {
   return `
   ${framework.language}-${framework.name}:
     build:
       context: ${framework.language}/${framework.name}
       dockerfile: Dockerfile
     ports:
-      - ${framework.port}:${framework.port}`;
+      - ${framework.port}:${framework.port}
+    environment: \n${' '.repeat(6)}${Object.keys(env)
+    .map(key => `${key}: ${env[key]}`)
+    .join(`\n${' '.repeat(6)}`)}`;
 }
 
 function getFrameworks(source) {
@@ -33,12 +36,17 @@ function getFrameworks(source) {
 }
 
 function generateComposeFile(frameworks, source) {
+  let env = {};
+
+  try {
+    env = JSON.parse(readFileSync(path.join(source, 'env.json')));
+  } catch (error) {}
+
   const services = _.map(frameworks, framework => {
-      return getServiceTemplate(framework);
-    });
+    return getServiceTemplate(framework, env);
+  });
 
   const yaml = `version: '3.1'\nservices:${services.join('\n')}`;
-
   writeFileSync(`${source}/docker-compose.yaml`, yaml);
 }
 
