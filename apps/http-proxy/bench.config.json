@@ -1,0 +1,6 @@
+{
+  "path": "/",
+  "environment": {
+    "PROXY_URL": "http://example.com"
+  }
+}

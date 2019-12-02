@@ -1,5 +1,5 @@
 {
-  "rounds": 5,
+  "rounds": 1,
   "duration": 15,
   "connections": 1000,
   "roundByRoundResults": false,

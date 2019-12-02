@@ -1,4 +1,4 @@
-const { lstatSync, readdirSync, writeFileSync, readFileSync } = require('fs');
+const { lstatSync, readdirSync, writeFileSync } = require('fs');
 const path = require('path');
 const _ = require('lodash');
 
@@ -29,11 +29,12 @@ function getServiceTemplate(framework, env) {
 function getFrameworks(source) {
   const map = getDirectoryNames(source).map(language => {
     return getDirectoryNames(path.join(source, language)).map(framework => {
-      return JSON.parse(
-        readFileSync(
-          path.join(source, language, framework, 'bench.config.json'),
-        ),
-      );
+      return require(path.join(
+        source,
+        language,
+        framework,
+        'bench.config.json',
+      ));
     });
   });
 
@@ -44,7 +45,8 @@ function generateComposeFile(frameworks, source) {
   let env = {};
 
   try {
-    env = JSON.parse(readFileSync(path.join(source, 'env.json')));
+    const config = require(path.join(source, 'bench.config.json'));
+    env = config.environment;
   } catch (error) {}
 
   const services = _.map(frameworks, framework => {

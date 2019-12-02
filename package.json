@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "bench": "node ./tools/bench.js"
+    "bench": "node ./tools/bench/bench.js"
   },
   "keywords": [],
   "author": "",
