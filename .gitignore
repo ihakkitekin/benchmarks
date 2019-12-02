@@ -3,6 +3,6 @@
 **/.vscode
 **/.env
 **/node_modules
-**/rust/target
+**/rust/**/target
 **/rust/**/*.rs.bk
 *.result.json
