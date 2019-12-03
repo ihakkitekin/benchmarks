@@ -1,3 +1,8 @@
 {
-  "paths": ["/static-regexp", "/dynamic-regexp"]
+  "paths": [
+    "/static-regexp",
+    "/dynamic-regexp",
+    "/string-replace",
+    "/regexp-replace"
+  ]
 }
