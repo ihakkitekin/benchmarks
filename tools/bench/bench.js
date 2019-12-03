@@ -1,5 +1,6 @@
 const autocannon = require('autocannon');
 const { execSync } = require('child_process');
+const path = require('path');
 const { text, print, newStep, newBenchMark } = require('../text');
 const { cooldown } = require('../utils');
 const { getDirectoryNames } = require('../file');
@@ -7,13 +8,11 @@ const {
   saveResultsToFile,
   mapRoundResult,
   createEmptyResults,
-  mapBenchResult,
+  mapBenchResults,
 } = require('../results');
-
 const { getFrameworks, generateComposeFile } = require('../config');
-const path = require('path');
-
 const mainConfig = require('./bench.config.json');
+
 
 function setup(benchName) {
   const source = path.join(__dirname, `../../apps/${benchName}`);
@@ -28,11 +27,13 @@ function setup(benchName) {
 }
 
 async function bench(framework, round, path) {
+  print('Running ... ');
   const results = await autocannon({
     url: `http://localhost:${framework.port}${path}`,
     connections: mainConfig.connections,
     duration: mainConfig.duration,
   });
+  console.log(text.green('done'));
 
   const res = mapRoundResult(results, round);
 
@@ -54,13 +55,13 @@ async function warmUp(framework, path) {
 }
 
 async function run(benchName) {
+  newBenchMark(benchName);
+
   const { frameworks, benchConfig, benchResults, source } = setup(benchName);
 
   const execOptions = {
     cwd: source,
   };
-
-  newBenchMark(benchName)
 
   newStep('Stopping containers if already running ...');
   execSync(`docker-compose down`, execOptions);
@@ -70,15 +71,15 @@ async function run(benchName) {
 
   for (let j = 0; j < frameworks.length; j++) {
     const framework = frameworks[j];
+    const benchFramework = `${framework.language}-${framework.name}`;
 
     try {
       for (let i = 0; i < benchConfig.paths.length; i++) {
         const path = benchConfig.paths[i];
-        const container = `${framework.language}-${framework.name}`;
 
         newStep(
           'Starting benchmark test for:',
-          text.magenta(`${framework.language}:${framework.name}`),
+          text.magenta(benchFramework),
           'on:',
           text.magenta(path),
         );
@@ -87,28 +88,24 @@ async function run(benchName) {
           const round = i + 1;
 
           console.log(text.yellow('Round:'), text.green(round));
-          execSync(`docker-compose start ${container}`, execOptions);
+          execSync(`docker-compose start ${benchFramework}`, execOptions);
 
           if (mainConfig.warmUp) {
             await warmUp(framework, path);
           }
 
-          print('Running ... ');
           const res = await bench(framework, round, path);
-
-          const resName = `${framework.language}:${framework.name}`;
 
           const currentBenchPath = benchResults.find(res => res.path === path);
           const benchResult = currentBenchPath.frameworks.find(
-            res => res.name === resName,
+            res => res.name === benchFramework,
           );
 
           benchResult.results.push(res);
-          console.log(text.green('done'));
 
-          execSync(`docker-compose stop ${container}`, execOptions);
+          execSync(`docker-compose stop ${benchFramework}`, execOptions);
 
-          if(mainConfig.cooldown){
+          if (mainConfig.cooldown) {
             await cooldown(10000);
           }
         }
@@ -121,7 +118,6 @@ async function run(benchName) {
   newStep('Stopping all containers ...');
   execSync(`docker-compose down`, execOptions);
 
-  const finalResults = [];
   const conditions = {
     benchMark: benchName,
     durationEach: mainConfig.duration,
@@ -129,25 +125,16 @@ async function run(benchName) {
     connections: mainConfig.connections,
   };
 
-  benchResults.forEach(result => {
-
+  const finalResults = benchResults.map(result => {
     const pathResult = {
       path: result.path,
-      frameworks: result.frameworks.map(benchResult => {
-        return mapBenchResult(benchResult);
-      }),
+      frameworks: mapBenchResults(result.frameworks),
     };
 
     console.table([{ ...conditions, path: pathResult.path }]);
-    console.table(
-      pathResult.frameworks.sort((first, second) => {
-        if (second.averageRps > first.averageRps) return 1;
-        if (first.averageRps > second.averageRps) return -1;
-        return 0;
-      }),
-    );
+    console.table(pathResult.frameworks);
 
-    finalResults.push(pathResult);
+    return pathResult;
   });
 
   saveResultsToFile(benchName, {
@@ -161,12 +148,11 @@ async function run(benchName) {
 
 async function init() {
   const benchName = process.argv[2];
-  
-  
+
   if (benchName) {
     await run(benchName);
   } else {
-    const source = path.join(__dirname, `../../apps`);
+    const source = path.join(__dirname, '../../apps');
     const benchNames = getDirectoryNames(source);
 
     for (let i = 0; i < benchNames.length; i++) {
