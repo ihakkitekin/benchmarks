@@ -4,5 +4,6 @@
   "connections": 1000,
   "roundByRoundResults": false,
   "warmUp": true,
-  "cooldown": true
+  "cooldown": true,
+  "noCache": false
 }

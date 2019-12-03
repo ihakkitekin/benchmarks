@@ -37,11 +37,11 @@ function getFrameworks(source) {
 }
 
 function generateComposeFile(frameworks, source) {
-  let env = {};
+  let env;
 
   try {
     const config = require(path.join(source, 'bench.config.json'));
-    env = config.environment;
+    env = config.environment || {};
   } catch (error) {}
 
   const services = _.map(frameworks, framework => {

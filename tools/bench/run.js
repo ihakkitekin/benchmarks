@@ -21,7 +21,7 @@ async function run(benchName) {
   execSync(`docker-compose down`, execOptions);
 
   newStep('Building containers ...');
-  execSync('docker-compose build && docker-compose up --no-start', execOptions);
+  execSync(`docker-compose build ${mainConfig.noCache ? '--no-cache': ''}&& docker-compose up --no-start`, execOptions);
 
   for (let j = 0; j < frameworks.length; j++) {
     const framework = frameworks[j];
