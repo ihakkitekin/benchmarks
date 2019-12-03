@@ -36,7 +36,7 @@ function createEmptyResults(frameworks, benchConfig) {
       path,
       frameworks: frameworks.map(framework => {
         return {
-          name: `${framework.language}:${framework.name}`,
+          name: `${framework.language}-${framework.name}`,
           results: [],
         };
       }),
