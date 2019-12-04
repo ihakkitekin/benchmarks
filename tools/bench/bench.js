@@ -1,15 +1,8 @@
 const autocannon = require('autocannon');
-const { execSync } = require('child_process');
-const path = require('path');
-const { text, print, newStep, newBenchMark } = require('../text');
-const { setup } = require('./setup');
-const { cooldown } = require('../utils');
-const { getDirectoryNames } = require('../file');
+const { text, print } = require('../text');
 const {
-  saveResultsToFile,
-  mapRoundResult,
-  mapBenchResults,
-} = require('../results');
+  mapRoundResult
+} = require('../result/result');
 const mainConfig = require('./bench.config.json');
 
 async function bench(framework, round, path) {
@@ -21,7 +14,7 @@ async function bench(framework, round, path) {
   });
   console.log(text.green('done'));
 
-  const res = mapRoundResult(results, round);
+  const res = mapRoundResult(results);
 
   if (mainConfig.roundByRoundResults) {
     print(`\nRound ${round} results:\n`, JSON.stringify(res, null, 2), '\n');

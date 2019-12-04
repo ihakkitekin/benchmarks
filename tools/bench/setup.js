@@ -1,15 +1,15 @@
 const path = require('path');
-const { createEmptyResults } = require('../results');
+const { createEmptyResults } = require('../result/result');
 const { getFrameworks, generateComposeFile } = require('../config');
 
-function setup(benchName) {
+function setup(benchName, mainConfig) {
   const source = path.join(__dirname, `../../apps/${benchName}`);
 
   const benchConfig = require(path.join(source, 'bench.config.json'));
 
   const frameworks = getFrameworks(source);
   generateComposeFile(frameworks, source);
-  benchResults = createEmptyResults(frameworks, benchConfig);
+  benchResults = createEmptyResults(frameworks, benchConfig, mainConfig);
 
   return { frameworks, benchConfig, benchResults, source };
 }

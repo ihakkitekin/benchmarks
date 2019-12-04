@@ -5,13 +5,20 @@ const { warmUp, bench } = require('./bench');
 const { setup } = require('./setup');
 const { cooldown } = require('../utils');
 const { getDirectoryNames } = require('../file');
-const { saveResultsToFile, mapBenchResults } = require('../results');
+const {
+  saveResultsToFile,
+  mapFrameworkResults,
+  mapRoundByRoundResults,
+} = require('../result/result');
 const mainConfig = require('./bench.config.json');
 
 async function run(benchName) {
   newBenchMark(benchName);
 
-  const { frameworks, benchConfig, benchResults, source } = setup(benchName);
+  const { frameworks, benchConfig, benchResults, source } = setup(
+    benchName,
+    mainConfig,
+  );
 
   const execOptions = {
     cwd: source,
@@ -21,7 +28,12 @@ async function run(benchName) {
   execSync(`docker-compose down`, execOptions);
 
   newStep('Building containers ...');
-  execSync(`docker-compose build ${mainConfig.noCache ? '--no-cache': ''}&& docker-compose up --no-start`, execOptions);
+  execSync(
+    `docker-compose build ${
+      mainConfig.noCache ? '--no-cache' : ''
+    }&& docker-compose up --no-start`,
+    execOptions,
+  );
 
   for (let j = 0; j < frameworks.length; j++) {
     const framework = frameworks[j];
@@ -51,11 +63,11 @@ async function run(benchName) {
           const res = await bench(framework, round, path);
 
           const currentBenchPath = benchResults.find(res => res.path === path);
-          const benchResult = currentBenchPath.frameworks.find(
-            res => res.name === benchFramework,
-          );
+          const benchResult = currentBenchPath.rounds
+            .find(r => r.round === round)
+            .results.find(res => res.name === benchFramework);
 
-          benchResult.results.push(res);
+          benchResult.result = res;
 
           execSync(`docker-compose stop ${benchFramework}`, execOptions);
 
@@ -73,7 +85,7 @@ async function run(benchName) {
   execSync(`docker-compose down`, execOptions);
 
   const conditions = {
-    benchMark: benchName,
+    benchmarkName: benchName,
     durationEach: mainConfig.duration,
     rounds: mainConfig.rounds,
     connections: mainConfig.connections,
@@ -82,7 +94,7 @@ async function run(benchName) {
   const finalResults = benchResults.map(result => {
     const pathResult = {
       path: result.path,
-      frameworks: mapBenchResults(result.frameworks),
+      frameworks: mapFrameworkResults(result.rounds),
     };
 
     console.table([{ ...conditions, path: pathResult.path }]);
@@ -94,9 +106,7 @@ async function run(benchName) {
   saveResultsToFile(benchName, {
     ...conditions,
     finalResults,
-    roundByRound: {
-      paths: benchResults,
-    },
+    roundByRound: mapRoundByRoundResults(benchResults),
   });
 }
 
