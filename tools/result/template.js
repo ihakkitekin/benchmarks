@@ -23,6 +23,8 @@ const template = `<!DOCTYPE html>
             <th scope="col">Duration for each round</th>
             <th scope="col">Total rounds</th>
             <th scope="col">Connections</th>
+            <th scope="col">CPU limit</th>
+            <th scope="col">Memory limit</th>
           </tr>
         </thead>
         <tbody>
@@ -31,6 +33,8 @@ const template = `<!DOCTYPE html>
             <td>{{durationEach}}</td>
             <td>{{rounds}}</td>
             <td>{{connections}}</td>
+            <td>{{resources.cpus}}</td>
+            <td>{{resources.memory}}</td>
           </tr>
         </tbody>
       </table>

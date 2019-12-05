@@ -2,7 +2,7 @@ const { execSync } = require('child_process');
 const { text, print } = require('../text');
 const { wait } = require('../utils');
 
-function Container(framework, benchName, environment, execOptions) {
+function Container(framework, benchName, environment, resources, execOptions) {
   this.framework = framework;
   this.benchFramework = `${framework.language}-${framework.name}`;
   this.tag = `${benchName}_${this.benchFramework}`;
@@ -14,6 +14,7 @@ function Container(framework, benchName, environment, execOptions) {
       return `-e ${key}='${value}'`;
     })
     .join(' ');
+  this.resources = resources;
 
   this.removeIfExist = function() {
     print('Remove container if it already exist ...\n');
@@ -45,9 +46,14 @@ function Container(framework, benchName, environment, execOptions) {
 
   this.create = function(round) {
     console.log(text.yellow('\nRound:'), text.green(round));
+
+    const resources = this.resources
+      ? `-m=${this.resources.memory} --cpus=${this.resources.cpus}`
+      : '';
+
     print('Creating container ... ');
     execSync(
-      `docker create -p ${this.framework.port}:${this.framework.port} --name=${this.tag} ${this.environment} ${this.tag}:latest`,
+      `docker create -p ${this.framework.port}:${this.framework.port} --name=${this.tag} ${this.environment} ${resources} ${this.tag}:latest`,
       this.execOptions,
     );
     print(text.green('done\n'));

@@ -30,6 +30,7 @@ async function run(benchName) {
       framework,
       benchName,
       benchConfig.environment || {},
+      mainConfig.resources,
       execOptions,
     );
 
@@ -73,6 +74,7 @@ async function run(benchName) {
     durationEach: mainConfig.duration,
     rounds: mainConfig.rounds,
     connections: mainConfig.connections,
+    resources: mainConfig.resources
   };
 
   const finalResults = benchResults.map(result => {
