@@ -1,9 +1,13 @@
 {
   "rounds": 1,
-  "duration": 15,
-  "connections": 1000,
-  "roundByRoundResults": false,
-  "warmUp": true,
+  "duration": 10,
+  "connections": 100,
+  "roundByRoundResults": true,
+  "warmUp": false,
   "cooldown": true,
-  "noCache": false
+  "resources": {
+    "cpus": "1",
+    "memory": "50m"
+  },
+  "collectMetrics": true
 }

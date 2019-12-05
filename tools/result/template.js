@@ -11,6 +11,10 @@ const template = `<!DOCTYPE html>
       integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
       crossorigin="anonymous"
     />
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" integrity="sha256-Uv9BNBucvCPipKQ2NS9wYpJmi8DTOEfTA/nH2aoJALw=" crossorigin="anonymous"></script>
   </head>
   <body>
     <h2 class="text-center text-success mt-3 mb-5">{{__pageTitle}} Benchmark Results: {{__date}}</h2>
@@ -86,6 +90,8 @@ const template = `<!DOCTYPE html>
             <th scope="col">Average latency</th>
             <th scope="col">Errors</th>
             <th scope="col">Timeouts</th>
+            <th scope="col">CPU usage</th>
+            <th scope="col">Memory usage</th>
           </tr>
         </thead>
         <tbody>
@@ -97,6 +103,8 @@ const template = `<!DOCTYPE html>
             <td>{{result.averageLatency}} ms</td>
             <td>{{result.errors}}</td>
             <td>{{result.timeouts}}</td>
+            <td><a href="javascript:void(0)" data-toggle="modal" data-target="#graphModal" onclick="openModal({{metrics.cpu}}, '% CPU Usage')">Show</a></td>
+            <td><a href="javascript:void(0)" data-toggle="modal" data-target="#graphModal" onclick="openModal({{metrics.memory}}, '% Memory Usage')">Show</a></td>
           </tr>
           {{/results}}
         </tbody>
@@ -104,6 +112,46 @@ const template = `<!DOCTYPE html>
       {{/rounds}}
       {{/roundByRound.paths}}
     </div>
+    <div class="modal fade" id="graphModal" tabindex="-1" role="dialog" aria-labelledby="graphModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-body" >
+          <canvas width="800" height="600" id="chartCtx"></canvas>
+        </div>
+      </div>
+    </div>
+    </div>
+    <script>
+      function openModal(data, title) {
+        var chart = new Chart('chartCtx', {
+              type: 'line',
+              data: {
+                  labels: new Array(data.length).fill(''),
+                  datasets: [{
+                      label: title,
+                      data: data,
+                      backgroundColor: [
+                          'rgba(255, 99, 132, 0.2)',
+                          'rgba(54, 162, 235, 0.2)',
+                          'rgba(255, 206, 86, 0.2)',
+                          'rgba(75, 192, 192, 0.2)',
+                          'rgba(153, 102, 255, 0.2)',
+                          'rgba(255, 159, 64, 0.2)'
+                      ],
+                      borderColor: [
+                          'rgba(255, 99, 132, 1)',
+                          'rgba(54, 162, 235, 1)',
+                          'rgba(255, 206, 86, 1)',
+                          'rgba(75, 192, 192, 1)',
+                          'rgba(153, 102, 255, 1)',
+                          'rgba(255, 159, 64, 1)'
+                      ],
+                      borderWidth: 1
+                  }]
+              }
+          })
+      }  
+  </script>
   </body>
 </html>`;
 

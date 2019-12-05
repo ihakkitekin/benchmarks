@@ -1,9 +1,9 @@
 const path = require('path');
 const { text, newStep, newBenchMark, print } = require('../text');
 const { warmUp, bench } = require('./bench');
+const { Metrics } = require('./metrics');
 const { Container } = require('./container');
 const { setup } = require('./setup');
-const { wait } = require('../utils');
 const { getDirectoryNames } = require('../file');
 const {
   saveResultsToFile,
@@ -29,10 +29,11 @@ async function run(benchName) {
     const container = new Container(
       framework,
       benchName,
-      benchConfig.environment || {},
+      benchConfig.environment || {},
       mainConfig.resources,
       execOptions,
     );
+    const metrics = new Metrics(container, execOptions);
 
     newStep(`Preparing ${container.benchFramework} for the test`);
     container.removeIfExist();
@@ -52,7 +53,12 @@ async function run(benchName) {
             await warmUp(framework, path);
           }
 
+          if (mainConfig.collectMetrics) {
+            metrics.start();
+          }
+
           const res = await bench(framework, round, path);
+          metrics.end();
 
           const currentBenchPath = benchResults.find(res => res.path === path);
           const benchResult = currentBenchPath.rounds
@@ -60,8 +66,19 @@ async function run(benchName) {
             .results.find(res => res.name === container.benchFramework);
 
           benchResult.result = res;
+          benchResult.metrics = {
+            cpu: JSON.stringify(
+              metrics.data.map(metric => metric.data['CPU %'].replace('%', '')),
+            ),
+            memory: JSON.stringify(
+              metrics.data.map(metric => metric.data['MEM %'].replace('%', '')),
+            ),
+          };
 
-          await container.remove(mainConfig.cooldown, round === mainConfig.rounds);
+          await container.remove(
+            mainConfig.cooldown,
+            round === mainConfig.rounds,
+          );
         }
       }
     } catch (error) {
@@ -74,7 +91,7 @@ async function run(benchName) {
     durationEach: mainConfig.duration,
     rounds: mainConfig.rounds,
     connections: mainConfig.connections,
-    resources: mainConfig.resources
+    resources: mainConfig.resources,
   };
 
   const finalResults = benchResults.map(result => {
