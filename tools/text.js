@@ -31,7 +31,7 @@ function newBenchMark(benchName) {
   return print(
     text.green('--- Running'),
     text.yellow(benchName),
-    text.green('benchmark ---'),
+    text.green('benchmark ---\n'),
   );
 }
 

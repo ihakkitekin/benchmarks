@@ -63,7 +63,7 @@ function mapRoundResult(results) {
 function mapRoundByRoundResults(results) {
   results.forEach(pathResult => {
     pathResult.rounds.forEach(roundResults => {
-      const sorted = _.orderBy(roundResults.results, 'rps', 'desc');
+      const sorted = _.orderBy(roundResults.results, 'result.rps', 'desc');
       roundResults.results = sorted;
     });
   });

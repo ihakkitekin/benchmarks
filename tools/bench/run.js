@@ -1,9 +1,9 @@
-const { execSync } = require('child_process');
 const path = require('path');
-const { text, newStep, newBenchMark } = require('../text');
+const { text, newStep, newBenchMark, print } = require('../text');
 const { warmUp, bench } = require('./bench');
+const { Container } = require('./container');
 const { setup } = require('./setup');
-const { cooldown } = require('../utils');
+const { wait } = require('../utils');
 const { getDirectoryNames } = require('../file');
 const {
   saveResultsToFile,
@@ -20,41 +20,32 @@ async function run(benchName) {
     mainConfig,
   );
 
-  const execOptions = {
-    cwd: source,
-  };
-
-  newStep('Stopping containers if already running ...');
-  execSync(`docker-compose down`, execOptions);
-
-  newStep('Building containers ...');
-  execSync(
-    `docker-compose build ${
-      mainConfig.noCache ? '--no-cache' : ''
-    }&& docker-compose up --no-start`,
-    execOptions,
-  );
-
   for (let j = 0; j < frameworks.length; j++) {
     const framework = frameworks[j];
-    const benchFramework = `${framework.language}-${framework.name}`;
+    const execOptions = {
+      cwd: path.join(source, framework.language, framework.name),
+    };
+
+    const container = new Container(
+      framework,
+      benchName,
+      benchConfig.environment || {},
+      execOptions,
+    );
+
+    newStep(`Preparing ${container.benchFramework} for the test`);
+    container.removeIfExist();
+    container.build();
 
     try {
       for (let i = 0; i < benchConfig.paths.length; i++) {
         const path = benchConfig.paths[i];
 
-        newStep(
-          'Starting benchmark test for:',
-          text.magenta(benchFramework),
-          'on:',
-          text.magenta(path),
-        );
+        print(text.yellow('Starting benchmark for:'), text.magenta(path), '\n');
 
         for (let i = 0; i < mainConfig.rounds; i++) {
           const round = i + 1;
-
-          console.log(text.yellow('Round:'), text.green(round));
-          execSync(`docker-compose start ${benchFramework}`, execOptions);
+          container.create(round);
 
           if (mainConfig.warmUp) {
             await warmUp(framework, path);
@@ -65,24 +56,17 @@ async function run(benchName) {
           const currentBenchPath = benchResults.find(res => res.path === path);
           const benchResult = currentBenchPath.rounds
             .find(r => r.round === round)
-            .results.find(res => res.name === benchFramework);
+            .results.find(res => res.name === container.benchFramework);
 
           benchResult.result = res;
 
-          execSync(`docker-compose stop ${benchFramework}`, execOptions);
-
-          if (mainConfig.cooldown) {
-            await cooldown(10000);
-          }
+          await container.remove(mainConfig.cooldown, round === mainConfig.rounds);
         }
       }
     } catch (error) {
       console.error(error);
     }
   }
-
-  newStep('Stopping all containers ...');
-  execSync(`docker-compose down`, execOptions);
 
   const conditions = {
     benchmarkName: benchName,

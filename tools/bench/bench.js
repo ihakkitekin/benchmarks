@@ -4,8 +4,10 @@ const {
   mapRoundResult
 } = require('../result/result');
 const mainConfig = require('./bench.config.json');
+const { wait } = require('../utils');
 
 async function bench(framework, round, path) {
+  await wait(3000);
   print('Running ... ');
   const results = await autocannon({
     url: `http://localhost:${framework.port}${path}`,
@@ -13,6 +15,7 @@ async function bench(framework, round, path) {
     duration: mainConfig.duration,
   });
   console.log(text.green('done'));
+  await wait(3000);
 
   const res = mapRoundResult(results);
 
@@ -24,6 +27,7 @@ async function bench(framework, round, path) {
 }
 
 async function warmUp(framework, path) {
+  await wait(3000);
   print('Warming up ... ');
   await autocannon({
     url: `http://localhost:${framework.port}${path}`,
