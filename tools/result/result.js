@@ -13,6 +13,8 @@ const initalFrameworkResult = {
   averageLatency: 0,
   errors: 0,
   timeouts: 0,
+  cpu: [],
+  memory: [],
 };
 
 function saveResultsToFile(benchName, results) {
@@ -107,6 +109,7 @@ function mapFrameworkResults(rounds) {
     const resultsLength = frameworkResults.length;
     const total = frameworkResults.reduce((acc, iter) => {
       const result = iter.result;
+      const metrics = iter.metrics;
 
       return {
         totalRequests: acc.totalRequests + result.totalRequests,
@@ -114,6 +117,12 @@ function mapFrameworkResults(rounds) {
         averageLatency: acc.averageLatency + result.averageLatency,
         errors: acc.errors + result.errors,
         timeouts: acc.timeouts + result.timeouts,
+        cpu: acc.cpu.concat(
+          metrics.map(metric => metric.data['CPU %'].replace('%', '')),
+        ),
+        memory: acc.memory.concat(
+          metrics.map(metric => metric.data['MEM %'].replace('%', '')),
+        ),
       };
     }, initalFrameworkResult);
 
@@ -125,6 +134,8 @@ function mapFrameworkResults(rounds) {
       averageLatency: Number((total.averageLatency / resultsLength).toFixed(2)),
       totalErrors: total.errors,
       totalTimeouts: total.timeouts,
+      cpu: JSON.stringify(total.cpu),
+      memory: JSON.stringify(total.memory),
     };
   });
 

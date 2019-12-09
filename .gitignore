@@ -7,4 +7,4 @@
 **/*.yml
 **/rust/**/target
 **/rust/**/*.rs.bk
-results
+results*

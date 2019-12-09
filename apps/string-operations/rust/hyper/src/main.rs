@@ -23,8 +23,8 @@ lazy_static! {
 async fn static_regexp() -> Result<Response<Body>> {
     let mut result= String::new();
 
-    STATIC_REGEXP.captures_iter(STATIC_STRING).for_each(|caps|{
-        result.push_str(caps.get(0).unwrap().as_str());
+    STATIC_REGEXP.find_iter(STATIC_STRING).for_each(|mat|{
+        result.push_str(mat.as_str());
         result.push_str("\n");
     });
 
@@ -41,8 +41,8 @@ async fn dynamic_regexp() -> Result<Response<Body>> {
 
     let mut result= String::new();
 
-    rg.captures_iter(STATIC_STRING).for_each(|caps|{
-        result.push_str(caps.get(0).unwrap().as_str());
+    rg.find_iter(STATIC_STRING).for_each(|mat|{
+        result.push_str(mat.as_str());
         result.push_str("\n");
     });
 

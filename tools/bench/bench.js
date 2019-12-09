@@ -1,8 +1,6 @@
 const autocannon = require('autocannon');
 const { text, print } = require('../text');
-const {
-  mapRoundResult
-} = require('../result/result');
+const { mapRoundResult } = require('../result/result');
 const mainConfig = require('./bench.config.json');
 const { wait } = require('../utils');
 
@@ -15,13 +13,14 @@ async function bench(framework, round, path) {
     duration: mainConfig.duration,
   });
   console.log(text.green('done'));
-  await wait(3000);
 
   const res = mapRoundResult(results);
 
   if (mainConfig.roundByRoundResults) {
-    print(`\nRound ${round} results:\n`, JSON.stringify(res, null, 2), '\n');
+    print(`\nRound ${round} results:\n`, JSON.stringify(res, null, 2), '\n\n');
   }
+
+  await wait(3000);
 
   return res;
 }

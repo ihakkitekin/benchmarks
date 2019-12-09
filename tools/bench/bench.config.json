@@ -3,7 +3,7 @@
   "duration": 10,
   "connections": 100,
   "roundByRoundResults": true,
-  "warmUp": false,
+  "warmUp": true,
   "cooldown": true,
   "resources": {
     "cpus": "1",

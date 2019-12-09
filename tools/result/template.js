@@ -57,6 +57,8 @@ const template = `<!DOCTYPE html>
             <th scope="col">Average latency</th>
             <th scope="col">Total errors</th>
             <th scope="col">Total timeouts</th>
+            <th scope="col">CPU usage</th>
+            <th scope="col">Memory usage</th>
           </tr>
         </thead>
         <tbody>
@@ -69,6 +71,8 @@ const template = `<!DOCTYPE html>
             <td>{{averageLatency}} ms</td>
             <td>{{totalErrors}}</td>
             <td>{{totalTimeouts}}</td>
+            <td><a href="javascript:void(0)" data-toggle="modal" data-target="#graphModal" onclick="openModal({{cpu}}, '% CPU Usage')">Show</a></td>
+            <td><a href="javascript:void(0)" data-toggle="modal" data-target="#graphModal" onclick="openModal({{memory}}, '% Memory Usage')">Show</a></td>
           </tr>
           {{/frameworks}}
         </tbody>
@@ -90,8 +94,6 @@ const template = `<!DOCTYPE html>
             <th scope="col">Average latency</th>
             <th scope="col">Errors</th>
             <th scope="col">Timeouts</th>
-            <th scope="col">CPU usage</th>
-            <th scope="col">Memory usage</th>
           </tr>
         </thead>
         <tbody>
@@ -103,8 +105,6 @@ const template = `<!DOCTYPE html>
             <td>{{result.averageLatency}} ms</td>
             <td>{{result.errors}}</td>
             <td>{{result.timeouts}}</td>
-            <td><a href="javascript:void(0)" data-toggle="modal" data-target="#graphModal" onclick="openModal({{metrics.cpu}}, '% CPU Usage')">Show</a></td>
-            <td><a href="javascript:void(0)" data-toggle="modal" data-target="#graphModal" onclick="openModal({{metrics.memory}}, '% Memory Usage')">Show</a></td>
           </tr>
           {{/results}}
         </tbody>

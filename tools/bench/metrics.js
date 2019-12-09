@@ -19,7 +19,7 @@ function Metrics(container, execOptions) {
   this.interval;
 
   this.start = function() {
-    this.interval = setInterval(this.getMetrics, 200);
+    this.interval = setInterval(this.getMetrics, 100);
   };
 
   this.end = function() {

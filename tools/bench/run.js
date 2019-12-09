@@ -11,6 +11,7 @@ const {
   mapRoundByRoundResults,
 } = require('../result/result');
 const mainConfig = require('./bench.config.json');
+const _ = require('lodash');
 
 async function run(benchName) {
   newBenchMark(benchName);
@@ -33,7 +34,6 @@ async function run(benchName) {
       mainConfig.resources,
       execOptions,
     );
-    const metrics = new Metrics(container, execOptions);
 
     newStep(`Preparing ${container.benchFramework} for the test`);
     container.removeIfExist();
@@ -48,6 +48,7 @@ async function run(benchName) {
         for (let i = 0; i < mainConfig.rounds; i++) {
           const round = i + 1;
           container.create(round);
+          const metrics = new Metrics(container, execOptions);
 
           if (mainConfig.warmUp) {
             await warmUp(framework, path);
@@ -66,14 +67,7 @@ async function run(benchName) {
             .results.find(res => res.name === container.benchFramework);
 
           benchResult.result = res;
-          benchResult.metrics = {
-            cpu: JSON.stringify(
-              metrics.data.map(metric => metric.data['CPU %'].replace('%', '')),
-            ),
-            memory: JSON.stringify(
-              metrics.data.map(metric => metric.data['MEM %'].replace('%', '')),
-            ),
-          };
+          benchResult.metrics = metrics.data;
 
           await container.remove(
             mainConfig.cooldown,
@@ -99,9 +93,6 @@ async function run(benchName) {
       path: result.path,
       frameworks: mapFrameworkResults(result.rounds),
     };
-
-    console.table([{ ...conditions, path: pathResult.path }]);
-    console.table(pathResult.frameworks);
 
     return pathResult;
   });
