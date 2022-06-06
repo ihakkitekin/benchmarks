@@ -7,4 +7,4 @@ edition = "2018"
 [dependencies]
 hyper = "0.13.0-alpha.4"
 hyper-tls = "0.4.0-alpha.4"
-tokio = "0.2.0-alpha.6"
+tokio = "1.8.4"
